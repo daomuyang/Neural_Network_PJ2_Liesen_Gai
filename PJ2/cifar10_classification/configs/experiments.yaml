@@ -1,0 +1,143 @@
+defaults:       # 全局默认配置
+  batch_size: 128         
+  epochs: 30
+  seed: 2020
+  num_workers: 8
+  activation: relu
+  optimizer: adam
+  lr: 0.001
+  weight_decay: 1e-4
+  label_smoothing: 0.0
+  conv_filters: 64
+  fc_neurons: 512
+  dropout_prob: 0.1         # 最优Dropout概率
+  focal_gamma: 2.0
+  reg_type: l2
+  loss_type: cross_entropy
+  model: original_bn_dropout   # 所有消融实验默认基于新最优基线
+
+experiments:
+  # ==============================================
+  # 【00系列】选择基线模型
+  # ==============================================
+  00:
+    name: 00_baseline_original
+    model: original
+    note: "纯Original基线（统一Adam+0.001）"
+
+  01:
+    name: 01_baseline_original_bn
+    model: original_bn
+    note: "Original+BN"
+
+  02:
+    name: 02_baseline_original_bn_dropout
+    model: original_bn_dropout
+    dropout_prob: 0.1
+    note: "Original+BN+Dropout（p=0.1）"
+
+  03:
+    name: 03_baseline_original_bn_residual
+    model: original_residual_bn
+    note: "Original+BN+残差"
+
+
+  # ==============================================
+  # 【10系列】不同神经元/滤波器数量
+  # ==============================================
+  11:
+    name: 11_ablation_filters_32
+    conv_filters: 32
+    note: "基线+卷积滤波器数量减半（32）"
+
+  12:
+    name: 12_ablation_filters_128
+    conv_filters: 128
+    note: "基线+卷积滤波器数量翻倍（128）"
+
+  13:
+    name: 13_ablation_fc_1024
+    fc_neurons: 1024
+    note: "基线+全连接层神经元翻倍（1024）"
+
+  # ==============================================
+  # 【20系列】不同损失函数+正则化
+  # ==============================================
+  21:
+    name: 21_ablation_loss_focal
+    loss_type: focal
+    label_smoothing: 0.1
+    focal_gamma: 2.0
+    note: "基线+Focal Loss+L2+标签平滑（0.1）"
+
+  22:
+    name: 22_ablation_loss_l2_5e-4
+    weight_decay: 5e-4
+    note: "基线+高强度L2正则化（5e-4）"
+
+  23:
+    name: 23_ablation_loss_labelsmooth_01
+    label_smoothing: 0.1
+    note: "基线+标签平滑（系数0.1）"
+
+  # ==============================================
+  # 【30系列】不同激活函数
+  # ==============================================
+  31:
+    name: 31_ablation_activation_sigmoid
+    activation: sigmoid
+    note: "激活函数消融：Sigmoid"
+
+  32:
+    name: 32_ablation_activation_tanh
+    activation: tanh
+    note: "激活函数消融：Tanh"
+
+  33:
+    name: 33_ablation_activation_swish
+    activation: swish
+    note: "激活函数消融：Swish"
+
+  # ==============================================
+  # 【40系列】自定义优化器
+  # ==============================================
+  41:
+    name: 41_custom_optimizer_sgd
+    optimizer: custom_sgd
+    lr: 0.05  
+    momentum: 0.9
+    weight_decay: 1e-4
+    note: "基线+手写SGD优化器"
+
+  42:
+    name: 42_custom_optimizer_adam
+    optimizer: custom_adam
+    note: "基线+手写Adam优化器"
+
+  # ==============================================
+  # 【50系列】最终最优调优组合
+  # ==============================================
+  50:
+    name: 50_combined_model1
+    model: original_bn_dropout
+    conv_filters: 128          # 最优滤波器数量
+    dropout_prob: 0.1          # 最优基线
+    reg_type: l2               # 最优正则
+    weight_decay: 1e-4         # 最优权重衰减
+    activation: relu           # 最优激活函数
+    optimizer: adam            # 最优优化器
+    lr: 0.001
+    note: "组合模型1：滤波器128 + L2 + Dropout(0.1) + Adam"
+
+  51:
+    name: 51_combined_model2
+    model: original_bn_dropout
+    conv_filters: 128
+    dropout_prob: 0.1
+    reg_type: l2
+    weight_decay: 1e-4
+    activation: relu
+    optimizer: adam
+    lr: 0.001
+    label_smoothing: 0.1   
+    note: "组合模型2：滤波器128+L2+Dropout(0.1)+Adam+标签平滑0.1"

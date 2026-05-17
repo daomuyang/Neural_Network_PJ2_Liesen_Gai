@@ -1,0 +1,20 @@
+============================================================
+Experiment ID: 21
+Experiment Name: 21_ablation_loss_focal
+============================================================
+Model: original_bn_dropout
+Optimizer: adam
+Learning Rate: 0.001
+Epochs: 30
+Batch Size: 128
+Weight Decay: 1e-4
+Regularization Type: l2
+Label Smoothing: 0.1
+Conv Filters: 64
+FC Neurons: 512
+Dropout Prob: 0.1
+Focal Gamma: 2.0
+Loss Type: focal
+Seed: 2020
+Num Workers: 8
+Note: 基线+Focal Loss+L2+标签平滑（0.1）

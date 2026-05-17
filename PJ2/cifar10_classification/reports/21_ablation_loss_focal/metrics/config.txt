@@ -1,0 +1,21 @@
+batch_size: 128
+epochs: 30
+seed: 2020
+num_workers: 8
+activation: relu
+optimizer: adam
+lr: 0.001
+weight_decay: 1e-4
+label_smoothing: 0.1
+conv_filters: 64
+fc_neurons: 512
+dropout_prob: 0.1
+focal_gamma: 2.0
+reg_type: l2
+loss_type: focal
+model: original_bn_dropout
+name: 21_ablation_loss_focal
+note: 基线+Focal Loss+L2+标签平滑（0.1）
+
+Best Validation Accuracy: 88.33%
+Number of Parameters: 9,756,426
