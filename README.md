@@ -9,7 +9,7 @@ CIFAR-10图像分类与Batch Normalization机制研究
 
 所有实验均基于PyTorch框架实现，代码结构清晰可复现。
 
-## 项目结构
+## GitHub项目结构
 ```
 PJ2/
 ├── cifar10_classification/    # 任务一：CIFAR-10图像分类实验根目录
@@ -170,8 +170,11 @@ python3 scripts/plot_both_gradients.py
 ### 数据集
 本项目使用CIFAR-10标准分类数据集：
 - 所有训练脚本已集成自动下载功能，首次运行时会自动下载至对应任务的`./data`目录
-- 自行下载地址：https://www.cs.toronto.edu/~kriz/cifar.html
-- 下载后请将数据集保存至对应任务的`./data`目录
+- 自行下载地址（官方）：https://www.cs.toronto.edu/~kriz/cifar.html
+- 我的数据集地址：https://drive.google.com/drive/folders/192fsnsRYRcfefc0776WxIC-81DsuKssV?dmr=1&ec=wgc-drive-%5Bmodule%5D-goto
+- 如选择手动下载，请在下载后请将数据集保存至对应任务的`./data`目录，并将loaders.py中查找download=True改为download=False
 
 ### 模型权重
-训练好的模型权重会自动保存到对应实验的`reports/[实验名]/models/best_model.pth`路径下。我训练的模型已经放在，下载后放入对应实验的目录里即可。
+训练好的模型权重会自动保存到对应实验的`reports/[实验名]/models/best_model.pth`路径下。
+
+我训练的模型已经放在https://drive.google.com/drive/folders/192fsnsRYRcfefc0776WxIC-81DsuKssV?dmr=1&ec=wgc-drive-%5Bmodule%5D-goto，下载后放入对应实验的`reports/[实验名]/models/`路径下即可。
