@@ -170,7 +170,8 @@ python3 scripts/plot_both_gradients.py
 ### 数据集
 本项目使用CIFAR-10标准分类数据集：
 - 所有训练脚本已集成自动下载功能，首次运行时会自动下载至对应任务的`./data`目录
-- 自行下载地址：https://www.cs.toronto.edu/~kriz/cifar.html，下载后请保存至对应任务的`./data`目录
+- 自行下载地址：https://www.cs.toronto.edu/~kriz/cifar.html
+- 下载后请将数据集保存至对应任务的`./data`目录
 
 ### 模型权重
 训练好的模型权重会自动保存到对应实验的`reports/[实验名]/models/best_model.pth`路径下。我训练的模型已经放在，下载后放入对应实验的目录里即可。
