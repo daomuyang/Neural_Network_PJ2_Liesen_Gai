@@ -177,4 +177,6 @@ python3 scripts/plot_both_gradients.py
 ### 模型权重
 训练好的模型权重会自动保存到对应实验的`reports/[实验名]/models/best_model.pth`路径下。
 
-我训练的模型已经放在https://drive.google.com/drive/folders/192fsnsRYRcfefc0776WxIC-81DsuKssV?dmr=1&ec=wgc-drive-%5Bmodule%5D-goto，下载后放入对应实验的`reports/[实验名]/models/`路径下即可。
+我训练的模型已经放在https://drive.google.com/drive/folders/192fsnsRYRcfefc0776WxIC-81DsuKssV?dmr=1&ec=wgc-drive-%5Bmodule%5D-goto
+
+下载后放入对应实验的`reports/[实验名]/models/`路径下即可。
