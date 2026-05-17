@@ -1,0 +1,15 @@
+============================================================
+Experiment ID: 3
+Experiment Name: vgg_a_lr002
+============================================================
+Model: VGG_A
+Optimizer: adam
+Learning Rate: 0.002
+Epochs: 30
+Batch Size: 128
+Weight Decay: 1e-4
+Label Smoothing: 0.1
+Seed: 2020
+Num Workers: 8
+Loss Type: cross_entropy
+Note: VGG-A 无BN，学习率2e-3
