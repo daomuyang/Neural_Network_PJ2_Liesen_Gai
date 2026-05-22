@@ -1,0 +1,23 @@
+batch_size: 128
+epochs: 30
+seed: 2020
+num_workers: 8
+activation: relu
+optimizer: custom_sgd
+lr: 0.05
+weight_decay: 1e-4
+label_smoothing: 0.0
+conv_filters: 64
+fc_neurons: 512
+dropout_prob: 0.0
+focal_gamma: 2.0
+reg_type: l2
+loss_type: cross_entropy
+model: original_residual_bn
+name: 45_custom_optimizer_sgd
+momentum: 0.9
+note: 自定义SGD
+
+Best Validation Accuracy: 88.04%
+Number of Parameters: 11,699,274
+Final Test Accuracy: 87.86%
