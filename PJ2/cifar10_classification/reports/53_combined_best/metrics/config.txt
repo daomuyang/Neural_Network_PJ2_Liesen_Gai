@@ -1,0 +1,22 @@
+batch_size: 128
+epochs: 30
+seed: 2020
+num_workers: 8
+activation: gelu
+optimizer: adadelta
+lr: 1.0
+weight_decay: 1e-5
+label_smoothing: 0.1
+conv_filters: 128
+fc_neurons: 512
+dropout_prob: 0.0
+focal_gamma: 2.0
+reg_type: l2
+loss_type: cross_entropy
+model: original_residual_bn
+name: 53_combined_best
+note: BN+残差 | 卷积128 | 权重衰减1e-5 | Adadelta
+
+Best Validation Accuracy: 92.52%
+Number of Parameters: 45,445,258
+Final Test Accuracy: 92.47%
