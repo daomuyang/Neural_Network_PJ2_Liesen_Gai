@@ -1,0 +1,190 @@
+defaults:
+  batch_size: 128
+  epochs: 30
+  seed: 2020
+  num_workers: 8
+  activation: relu
+  optimizer: adam
+  lr: 0.001
+  weight_decay: 1e-4
+  label_smoothing: 0.0
+  conv_filters: 64
+  fc_neurons: 512
+  dropout_prob: 0.0
+  focal_gamma: 2.0
+  reg_type: l2
+  loss_type: cross_entropy
+  model: original_residual_bn
+
+experiments:
+  # 基线模型选择
+  01:
+    name: 01_baseline_original_bn
+    model: original_bn
+    note: Original+BN
+
+  02:
+    name: 02_baseline_original_bn_dropout
+    model: original_bn_dropout
+    dropout_prob: 0.1
+    note: Original+BN+Dropout
+
+  03:
+    name: 03_baseline_original_bn_residual
+    model: original_residual_bn
+    note: Original+BN+残差
+
+  # 卷积核与全连接层消融
+  11:
+    name: 11_ablation_filters_32
+    conv_filters: 32
+    note: 卷积滤波器32
+
+  12:
+    name: 12_ablation_filters_128
+    conv_filters: 128
+    note: 卷积滤波器128
+
+  13:
+    name: 13_ablation_fc_1024
+    fc_neurons: 1024
+    note: 全连接层1024
+
+  # 损失函数与正则化消融
+  21:
+    name: 21_ablation_loss_focal
+    loss_type: focal
+    focal_gamma: 2.0
+    note: Focal Loss+标签平滑
+
+  22:
+    name: 22_ablation_loss_l2_5e-4
+    weight_decay: 5e-4
+    note: 高L2正则
+
+  23:
+    name: 23_ablation_loss_labelsmooth_01
+    label_smoothing: 0.1
+    note: 标签平滑
+
+  # 激活函数消融
+  31:
+    name: 31_ablation_activation_sigmoid
+    activation: sigmoid
+    note: 激活函数Sigmoid
+
+  32:
+    name: 32_ablation_activation_tanh
+    activation: tanh
+    note: 激活函数Tanh
+
+  33:
+    name: 33_ablation_activation_swish
+    activation: swish
+    note: 激活函数Swish
+
+  34:
+    name: 34_ablation_activation_gelu
+    activation: gelu
+    note: 激活函数GELU
+  35:
+    name: 35_ablation_activation_leaky_relu
+    activation: leaky_relu
+    note: 激活函数LeakyReLU
+    
+  # 优化器对比
+  40:
+    name: 40_optimizer_adam
+    optimizer: adam
+    lr: 0.001
+    note: 优化器Adam
+
+  41:
+    name: 41_optimizer_adamw
+    optimizer: adamw
+    lr: 0.001
+    note: 优化器AdamW
+
+  42:
+    name: 42_optimizer_rmsprop
+    optimizer: rmsprop
+    lr: 0.001
+    note: 优化器RMSprop
+
+  43:
+    name: 43_optimizer_adagrad
+    optimizer: adagrad
+    lr: 0.01
+    note: 优化器Adagrad
+
+  44:
+    name: 44_optimizer_adadelta
+    optimizer: adadelta
+    lr: 1.0
+    note: 优化器Adadelta
+
+  45:
+    name: 45_custom_optimizer_sgd
+    optimizer: custom_sgd
+    lr: 0.05
+    momentum: 0.9
+    note: 自定义SGD
+
+  46:
+    name: 46_custom_optimizer_adam
+    optimizer: custom_adam
+    note: 自定义Adam
+
+  # 最优组合模型
+
+  51:
+    name: 51_combined_best
+    model: original_residual_bn
+    conv_filters: 128
+    fc_neurons: 512
+    optimizer: adadelta
+    lr: 1.0
+    weight_decay: 1e-4
+    activation: gelu
+    label_smoothing: 0.1
+    loss_type: cross_entropy
+    note: BN+残差 | 卷积128 | 标签平滑0.1 | Adadelta
+
+  52:
+    name: 52_combined_best
+    model: original_residual_bn
+    conv_filters: 128
+    fc_neurons: 512
+    optimizer: adadelta
+    lr: 1.0
+    weight_decay: 1e-4
+    activation: gelu
+    loss_type: cross_entropy
+    note: BN+残差 | 卷积128 | Adadelta
+
+  53:
+    name: 53_combined_best
+    model: original_residual_bn
+    conv_filters: 128
+    fc_neurons: 512
+    optimizer: adadelta
+    lr: 1.0
+    weight_decay: 1e-5
+    activation: gelu
+    label_smoothing: 0.1
+    loss_type: cross_entropy
+    note: BN+残差 | 卷积128 | 权重衰减1e-5 | Adadelta
+
+  54:
+    name: 54_final_best
+    model: original_residual_bn
+    conv_filters: 128
+    fc_neurons: 512
+    optimizer: adadelta
+    lr: 1.0
+    weight_decay: 1e-4
+    epochs: 50
+    activation: gelu
+    label_smoothing: 0.1
+    loss_type: cross_entropy
+    note: BN+残差 | 卷积128 | 标签平滑0.1 | Adadelta
