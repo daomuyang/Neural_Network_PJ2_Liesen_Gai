@@ -1,0 +1,21 @@
+============================================================
+Experiment ID: 3
+Experiment Name: vgg_a_lr002
+============================================================
+Model: VGG_A
+Optimizer: adam
+Learning Rate: 0.002
+Epochs: 30
+Batch Size: 256
+Weight Decay: 0.0
+Label Smoothing: 0.0
+Scheduler: None
+T_max: 30
+Seed: 2020
+Num Workers: 0
+Loss Type: cross_entropy
+Note: VGG-A 无BN，学习率2e-3
+------------------------------------------------------------
+Best Validation Accuracy: 80.48%
+Final Test Accuracy: 80.89%
+Final Test Error: 19.11%

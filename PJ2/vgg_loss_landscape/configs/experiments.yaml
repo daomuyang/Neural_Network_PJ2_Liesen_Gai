@@ -1,0 +1,77 @@
+# 任务二：Batch Normalization实验配置
+defaults:
+  batch_size: 256
+  epochs: 30               
+  seed: 2020               
+  num_workers: 8
+  optimizer: adam
+  lr: 0.001               
+  loss_type: cross_entropy
+  label_smoothing: 0.0     
+  weight_decay: 0.0       
+  scheduler: null
+  T_max: 30
+
+experiments:
+  # ========== VGG-A（无BN）四个学习率 ==========
+  # 固定学习率，无调度器，专门用于绘制loss landscape
+  00:
+    name: vgg_a_lr0001
+    model: VGG_A
+    lr: 0.0001
+    note: "VGG-A 无BN，学习率1e-4"
+  01:
+    name: vgg_a_lr0005
+    model: VGG_A
+    lr: 0.0005
+    note: "VGG-A 无BN，学习率5e-4"
+  02:
+    name: vgg_a_lr001
+    model: VGG_A
+    lr: 0.001
+    note: "VGG-A 无BN，学习率1e-3"
+  03:
+    name: vgg_a_lr002
+    model: VGG_A
+    lr: 0.002
+    note: "VGG-A 无BN，学习率2e-3"
+
+  # ========== VGG-A-BN（有BN）四个学习率 ==========
+  # 与无BN完全相同的学习率，确保对比绝对公平
+  04:
+    name: vgg_a_bn_lr0001
+    model: VGG_A_BatchNorm
+    lr: 0.0001
+    note: "VGG-A 有BN，学习率1e-4"
+  05:
+    name: vgg_a_bn_lr0005
+    model: VGG_A_BatchNorm
+    lr: 0.0005
+    note: "VGG-A 有BN，学习率5e-4"
+  06:
+    name: vgg_a_bn_lr001
+    model: VGG_A_BatchNorm
+    lr: 0.001
+    note: "VGG-A 有BN，学习率1e-3"
+  07:
+    name: vgg_a_bn_lr002
+    model: VGG_A_BatchNorm
+    lr: 0.002
+    note: "VGG-A 有BN，学习率2e-3"
+
+
+  # ========== 最优性能实验(带学习率调度器) ==========
+  8:
+    name: vgg_a_best_performance
+    model: VGG_A
+    epochs: 30
+    scheduler: CosineAnnealingLR
+    T_max: 30
+    note: "VGG-A 无BN，最优超参+CosineAnnealingLR，仅用于最终精度对比"
+  9:
+    name: vgg_a_bn_best_performance
+    model: VGG_A_BatchNorm
+    epochs: 30
+    scheduler: CosineAnnealingLR
+    T_max: 30
+    note: "VGG-A 有BN，最优超参+CosineAnnealingLR，仅用于最终精度对比"
