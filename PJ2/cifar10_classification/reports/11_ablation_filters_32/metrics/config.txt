@@ -1,0 +1,22 @@
+batch_size: 128
+epochs: 30
+seed: 2020
+num_workers: 8
+activation: relu
+optimizer: adam
+lr: 0.001
+weight_decay: 1e-4
+label_smoothing: 0.0
+conv_filters: 32
+fc_neurons: 512
+dropout_prob: 0.0
+focal_gamma: 2.0
+reg_type: l2
+loss_type: cross_entropy
+model: original_residual_bn
+name: 11_ablation_filters_32
+note: 卷积滤波器32
+
+Best Validation Accuracy: 89.90%
+Number of Parameters: 3,194,410
+Final Test Accuracy: 90.30%

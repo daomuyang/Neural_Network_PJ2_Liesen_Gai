@@ -1,0 +1,22 @@
+batch_size: 128
+epochs: 30
+seed: 2020
+num_workers: 8
+activation: relu
+optimizer: adam
+lr: 0.001
+weight_decay: 1e-4
+label_smoothing: 0.0
+conv_filters: 64
+fc_neurons: 512
+dropout_prob: 0.0
+focal_gamma: 2.0
+reg_type: l2
+loss_type: cross_entropy
+model: original_bn
+name: 01_baseline_original_bn
+note: Original+BN
+
+Best Validation Accuracy: 89.08%
+Number of Parameters: 9,753,674
+Final Test Accuracy: 88.94%
