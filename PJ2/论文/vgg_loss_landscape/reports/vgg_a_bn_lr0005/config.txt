@@ -1,0 +1,21 @@
+============================================================
+Experiment ID: 5
+Experiment Name: vgg_a_bn_lr0005
+============================================================
+Model: VGG_A_BatchNorm
+Optimizer: adam
+Learning Rate: 0.0005
+Epochs: 30
+Batch Size: 256
+Weight Decay: 0.0
+Label Smoothing: 0.0
+Scheduler: None
+T_max: 30
+Seed: 2020
+Num Workers: 0
+Loss Type: cross_entropy
+Note: VGG-A 有BN，学习率5e-4
+------------------------------------------------------------
+Best Validation Accuracy: 86.30%
+Final Test Accuracy: 86.30%
+Final Test Error: 13.70%

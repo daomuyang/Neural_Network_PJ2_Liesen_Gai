@@ -1,0 +1,9 @@
+Gradient Norm Experimental Results
+----------------------------------------
+Last Layer Max Norm:
+VGG-A        1.2040
+VGG-A-BN     1.4374
+
+Middle Layer Steady Mean (epoch15-30):
+VGG-A        0.0915
+VGG-A-BN     0.0213
