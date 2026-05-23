@@ -188,3 +188,30 @@ experiments:
     label_smoothing: 0.1
     loss_type: cross_entropy
     note: BN+残差 | 卷积128 | 标签平滑0.1 | Adadelta
+
+  55:
+    name: 55_combined_best
+    model: original_residual_bn
+    conv_filters: 64
+    fc_neurons: 1024
+    optimizer: adadelta
+    lr: 1.0
+    weight_decay: 1e-4
+    activation: gelu
+    label_smoothing: 0.1
+    loss_type: cross_entropy
+    note: BN+残差 | 全连接1024 | 标签平滑0.1 | Adadelta
+
+  56:
+    name: 56_final_best
+    model: original_residual_bn
+    conv_filters: 64
+    fc_neurons: 1024
+    optimizer: adadelta
+    lr: 1.0
+    weight_decay: 1e-4
+    epochs: 50
+    activation: gelu
+    label_smoothing: 0.1
+    loss_type: cross_entropy
+    note: BN+残差 | 全连接1024 | 标签平滑0.1 | Adadelta
