@@ -177,11 +177,10 @@ python3 scripts/plot_both_gradients.py
 
 ## 实验结果总结
 ### 任务一：CIFAR-10分类
-- 最优模型：Original_Residual_BN（54号实验，残差连接+BN）
-- 最佳测试准确率：94.45%（50轮）
-- 次优模型：Original_Residual_BN（51号实验，残差连接+BN）
-- 最佳测试准确率：93.51%（30轮）
-- 最优小模型：Original_Residual_BN（44号实验），测试准确率92.16%，参数量仅为最优模型的1/4，兼顾性能与效率
+- 最优大模型：54号
+- 最佳测试准确率：94.45%（50轮）、93.51%（30轮）
+- 最优小模型：56号（参数量仅为54号的1/4）
+- 最佳测试准确率：94.01%（50轮）、92.89%（30轮）
 
 ### 任务二：Batch Normalization研究
 - 固定学习率下，BN平均提升验证准确率：4.43%
@@ -204,7 +203,7 @@ python3 scripts/plot_both_gradients.py
 https://drive.google.com/drive/folders/192fsnsRYRcfefc0776WxIC-81DsuKssV?dmr=1&ec=wgc-drive-%5Bmodule%5D-goto
 
 包含：
-- 任务一所有25组消融实验的最优模型
+- 任务一所有27组消融实验的最优模型
 - 任务二所有8组固定学习率配置下的最优模型
 - 任务二2组添加余弦退火调度器后最优配置下的模型
 - 所有模型均为PyTorch标准`.pth`格式，可直接用于推理与验证
