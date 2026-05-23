@@ -3,8 +3,10 @@
 | ID | 模型 | 学习率 | 激活 | 优化器 | 最佳验证准确率 | 最终测试准确率 | 参数量 | 说明 |
 |---|---|---|---|---|---|---|---|---|
 | 54 | original_residual_bn | 1.0 | gelu | adadelta | 94.72% | 94.45% | 45,445,258 | BN+残差 | 卷积128 | 标签平滑0.1 | Adadelta |
+| 56 | original_residual_bn | 1.0 | gelu | adadelta | 94.18% | 94.01% | 12,753,994 | BN+残差 | 全连接1024 | 标签平滑0.1 | Adadelta |
 | 51 | original_residual_bn | 1.0 | gelu | adadelta | 94.06% | 93.51% | 45,445,258 | BN+残差 | 卷积128 | 标签平滑0.1 | Adadelta |
 | 52 | original_residual_bn | 1.0 | gelu | adadelta | 93.22% | 93.23% | 45,445,258 | BN+残差 | 卷积128 | Adadelta |
+| 55 | original_residual_bn | 1.0 | gelu | adadelta | 93.02% | 92.89% | 12,753,994 | BN+残差 | 全连接1024 | 标签平滑0.1 | Adadelta |
 | 53 | original_residual_bn | 1.0 | gelu | adadelta | 92.52% | 92.47% | 45,445,258 | BN+残差 | 卷积128 | 权重衰减1e-5 | Adadelta |
 | 44 | original_residual_bn | 1.0 | relu | adadelta | 92.38% | 92.16% | 11,699,274 | 优化器Adadelta |
 | 41 | original_residual_bn | 0.001 | relu | adamw | 91.76% | 91.91% | 11,699,274 | 优化器AdamW |
