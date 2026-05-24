@@ -2,15 +2,17 @@ import sys
 import os
 import warnings
 
+# 固定项目根路径，避免导入错误
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)  # 优先导入项目根目录
 
+# 过滤无关警告
 warnings.filterwarnings('ignore', category=UserWarning, module='torch.cuda')
 warnings.filterwarnings('ignore', category=DeprecationWarning, module='numpy')
 warnings.filterwarnings('ignore', category=FutureWarning, module='matplotlib')
 
 import matplotlib as mpl
-mpl.use('Agg')  
+mpl.use('Agg')  # 无GUI后端，适配服务器
 import matplotlib.pyplot as plt
 from torch import nn
 import numpy as np
@@ -18,6 +20,7 @@ import torch
 import argparse
 import yaml
 from tqdm import tqdm
+from datetime import datetime
 
 from models.vgg import VGG_A, VGG_A_BatchNorm
 from data.loaders import get_cifar_loader
@@ -26,17 +29,16 @@ from utils.train_utils import (
     create_experiment_dirs, get_middle_conv_layer
 )
 
-# 模型注册表
+# 模型注册表（固定）
 MODEL_REGISTRY = {
     'VGG_A': VGG_A,
     'VGG_A_BatchNorm': VGG_A_BatchNorm
 }
 
 def train(model, optimizer, criterion, train_loader, val_loader, device,
-          exp_figures, exp_models, epochs_n=100, scheduler=None):
-    """核心训练函数"""
+          exp_figures, exp_models, epochs_n=100, scheduler=None, calc_grad_metrics=False):
+    """核心训练函数（修复梯度计算稳定性+显存优化）"""
     model.to(device)
-    # 初始化曲线数组
     train_loss_curve = np.zeros(epochs_n, dtype=np.float32)
     val_loss_curve = np.zeros(epochs_n, dtype=np.float32)
     train_acc_curve = np.zeros(epochs_n, dtype=np.float32)
@@ -48,6 +50,9 @@ def train(model, optimizer, criterion, train_loader, val_loader, device,
     grad_mid_layer_avg = np.zeros(epochs_n, dtype=np.float32)
     batches_n = len(train_loader)
     
+    grad_predictiveness_list = []
+    max_grad_diff_list = []
+    
     # 校验中间卷积层
     try:
         mid_conv_layer = get_middle_conv_layer(model)
@@ -55,7 +60,6 @@ def train(model, optimizer, criterion, train_loader, val_loader, device,
     except Exception as e:
         raise RuntimeError(f"获取中间卷积层失败: {e}")
 
-    # GPU预热
     print("🔄 正在预热GPU...")
     with torch.no_grad():
         dummy_x = torch.randn(1, 3, 32, 32, device=device, dtype=torch.float32)
@@ -75,24 +79,92 @@ def train(model, optimizer, criterion, train_loader, val_loader, device,
             x = x.to(device, non_blocking=True, dtype=torch.float32)
             y = y.to(device, non_blocking=True, dtype=torch.long)
 
-            optimizer.zero_grad(set_to_none=True)  # 更高效的梯度清零
+            optimizer.zero_grad(set_to_none=True)
             preds = model(x)
             loss = criterion(preds, y)
 
             # 反向传播
             loss.backward()
-            
+
+            if calc_grad_metrics:
+                try:
+                    lr = optimizer.param_groups[0]['lr']
+                    # 计算 Gradient Predictiveness
+                    grad_norm_sq = 0.0
+                    for p in model.parameters():
+                        if p.grad is not None:
+                            grad_norm_sq += torch.sum(p.grad ** 2).item()
+                    predicted_drop = lr * grad_norm_sq + 1e-8
+
+                    loss_before = loss.item()
+                    with torch.no_grad():
+                        for p in model.parameters():
+                            if p.grad is not None:
+                                p -= lr * p.grad
+                    with torch.no_grad():
+                        outputs_after = model(x)
+                        loss_after = criterion(outputs_after, y).item()
+                    actual_drop = loss_before - loss_after
+
+                    grad_predictiveness = actual_drop / predicted_drop
+                    grad_predictiveness_list.append(grad_predictiveness)
+
+                    with torch.no_grad():
+                        for p in model.parameters():
+                            if p.grad is not None:
+                                p += lr * p.grad
+
+                    # 计算 Maximum Gradient Difference
+                    delta = 1e-3
+                    max_diff = 0.0
+                    original_params = {}
+                    original_grads = {}
+
+                    with torch.no_grad():
+                        for name, p in model.named_parameters():
+                            original_params[name] = p.data.clone()
+                            if p.grad is not None:
+                                original_grads[name] = p.grad.clone()
+
+                    with torch.no_grad():
+                        for name, p in model.named_parameters():
+                            p.data += delta * torch.randn_like(p.data)
+
+                    optimizer.zero_grad(set_to_none=True)
+                    outputs_perturb = model(x)
+                    loss_perturb = criterion(outputs_perturb, y)
+                    loss_perturb.backward()
+
+                    with torch.no_grad():
+                        for name, p in model.named_parameters():
+                            if name in original_grads and p.grad is not None:
+                                diff = torch.norm(p.grad - original_grads[name]).item()
+                                max_diff = max(max_diff, diff / delta)
+
+                    with torch.no_grad():
+                        for name, p in model.named_parameters():
+                            p.data.copy_(original_params[name])
+                            if name in original_grads:
+                                p.grad = original_grads[name]
+                            else:
+                                p.grad = None
+
+                    max_grad_diff_list.append(max_diff)
+
+                except Exception as e:
+                    print(f"⚠️ 梯度指标计算跳过: {e}")
+                    pass
+
             # 梯度范数计算
             try:
                 last_layer_grad = model.classifier[-1].weight.grad
                 grad_last_norm = torch.norm(last_layer_grad).item() if last_layer_grad is not None else 0.0
                 epoch_grad_last_sum += grad_last_norm
-
                 mid_layer_grad = mid_conv_layer.weight.grad
                 grad_mid_norm = torch.norm(mid_layer_grad).item() if mid_layer_grad is not None else 0.0
                 epoch_grad_mid_sum += grad_mid_norm
             except Exception as e:
-                print(f"⚠️ 第{epoch+1}轮第{step+1}步梯度计算失败: {e}")
+                print(f"⚠️ 梯度范数计算失败: {e}")
                 grad_last_norm = 0.0
                 grad_mid_norm = 0.0
 
@@ -118,7 +190,6 @@ def train(model, optimizer, criterion, train_loader, val_loader, device,
         current_val_acc = val_acc_curve[epoch]
         if current_val_acc > max_val_acc:
             max_val_acc = current_val_acc
-            # 先保存临时文件，再重命名
             temp_path = best_model_path + '.tmp'
             torch.save({
                 'epoch': epoch,
@@ -133,7 +204,7 @@ def train(model, optimizer, criterion, train_loader, val_loader, device,
             tqdm.write(f"Epoch {epoch+1:2d} | Val Acc: {current_val_acc:.2f}% | Val Loss: {val_loss_curve[epoch]:.4f}")
 
         losses_list.append(step_losses)
-        torch.cuda.empty_cache()  # 每轮清理显存
+        torch.cuda.empty_cache()
 
     # 绘制训练曲线
     print("🔄 正在绘制训练曲线...")
@@ -163,10 +234,11 @@ def train(model, optimizer, criterion, train_loader, val_loader, device,
     except Exception as e:
         print(f"⚠️ 绘制曲线失败: {e}")
 
-    return losses_list, grad_last_layer_avg, grad_mid_layer_avg, train_loss_curve, val_loss_curve, train_acc_curve, val_acc_curve, max_val_acc
+    return (losses_list, grad_last_layer_avg, grad_mid_layer_avg,
+            train_loss_curve, val_loss_curve, train_acc_curve, val_acc_curve,
+            max_val_acc, grad_predictiveness_list, max_grad_diff_list)
 
 def evaluate_test(model, test_loader, device):
-    """在测试集上评估模型"""
     model.eval()
     correct = 0
     total = 0
@@ -184,35 +256,31 @@ def evaluate_test(model, test_loader, device):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='VGG BatchNorm Loss Landscape Experiment')
-    parser.add_argument('--exp', type=str, required=True, help='实验ID（对应experiments.yaml）')
+    parser.add_argument('--exp', type=str, required=True, help='实验ID')
     parser.add_argument('--config', type=str, default='configs/experiments.yaml', help='配置文件路径')
-    parser.add_argument('--model', type=str, choices=MODEL_REGISTRY.keys(), help='覆盖模型类型')
-    parser.add_argument('--experiment', type=str, help='覆盖实验名称')
-    parser.add_argument('--batch_size', type=int, help='覆盖批次大小')
-    parser.add_argument('--epochs', type=int, help='覆盖训练轮数')
-    parser.add_argument('--lr', type=float, help='覆盖学习率')
-    parser.add_argument('--seed', type=int, help='覆盖随机种子')
-    parser.add_argument('--num_workers', type=int, default=0, help='数据加载线程数（Windows建议0）')
+    parser.add_argument('--model', type=str, choices=MODEL_REGISTRY.keys())
+    parser.add_argument('--experiment', type=str)
+    parser.add_argument('--batch_size', type=int)
+    parser.add_argument('--epochs', type=int)
+    parser.add_argument('--lr', type=float)
+    parser.add_argument('--seed', type=int)
+    parser.add_argument('--num_workers', type=int, default=0)
+    parser.add_argument('--calc_gradient_metrics', action='store_true', default=False, help='计算梯度指标')
 
     args = parser.parse_args()
 
-    # 加载配置文件
+    # 加载配置
     try:
         with open(args.config, 'r', encoding='utf-8') as f:
             config = yaml.safe_load(f)
     except Exception as e:
-        raise RuntimeError(f"加载配置文件失败: {e}")
+        raise RuntimeError(f"加载配置失败: {e}")
 
-    # 合并配置
     exp_id = int(args.exp)
-    if exp_id not in config['experiments']:
-        raise ValueError(f"实验ID {exp_id} 不存在于配置文件")
-    
     exp_config = config['experiments'][exp_id]
     merged_args = config['defaults'].copy()
     merged_args.update(exp_config)
 
-    # 覆盖命令行参数
     for k, v in vars(args).items():
         if v is not None and k not in ['exp', 'config']:
             if k == 'experiment':
@@ -220,17 +288,15 @@ if __name__ == '__main__':
             else:
                 merged_args[k] = v
 
-    # 转换为Namespace
     args = argparse.Namespace(**merged_args)
 
-    # 设备选择
+    # 设备
     if torch.cuda.is_available():
         device = torch.device('cuda')
         torch.cuda.empty_cache()
         print("✅ 使用GPU训练")
     elif torch.backends.mps.is_available():
         device = torch.device('mps')
-        print("✅ 使用MPS训练")
     else:
         device = torch.device('cpu')
         print("⚠️ 使用CPU训练")
@@ -239,125 +305,75 @@ if __name__ == '__main__':
     print(f"Experiment ID: {exp_id} | Model: {args.model} | LR: {args.lr}")
     print("="*60)
 
-    # 创建实验目录
     exp_figures, exp_models, exp_metrics = create_experiment_dirs(args.name)
-    # 固定随机种子
     set_random_seeds(int(args.seed), device)
 
     # 加载数据
     print("🔄 正在加载数据...")
-    try:
-        train_loader = get_cifar_loader(
-            train=True, 
-            batch_size=int(args.batch_size), 
-            num_workers=int(args.num_workers)
-        )
-        val_loader = get_cifar_loader(
-            val=True, 
-            shuffle=False, 
-            batch_size=int(args.batch_size), 
-            num_workers=int(args.num_workers)
-        )
-        test_loader = get_cifar_loader(
-            train=False, 
-            batch_size=int(args.batch_size), 
-            num_workers=int(args.num_workers)
-        )
-        print("✅ 数据加载完成")
-    except Exception as e:
-        raise RuntimeError(f"数据加载失败: {e}")
+    train_loader = get_cifar_loader(train=True, batch_size=int(args.batch_size), num_workers=int(args.num_workers))
+    val_loader = get_cifar_loader(val=True, shuffle=False, batch_size=int(args.batch_size), num_workers=int(args.num_workers))
+    test_loader = get_cifar_loader(train=False, batch_size=int(args.batch_size), num_workers=int(args.num_workers))
+    print("✅ 数据加载完成")
 
-    # 初始化模型和优化器
+    # 模型
     model = MODEL_REGISTRY[args.model]()
-    optimizer = torch.optim.Adam(
-        model.parameters(), 
-        lr=float(args.lr), 
-        weight_decay=float(args.weight_decay)
-    )
+    optimizer = torch.optim.Adam(model.parameters(), lr=float(args.lr), weight_decay=float(args.weight_decay))
     criterion = nn.CrossEntropyLoss(label_smoothing=float(args.label_smoothing))
     
-    # 学习率调度器
     scheduler = None
     if hasattr(args, 'scheduler') and args.scheduler == 'CosineAnnealingLR':
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer, 
-            T_max=int(args.T_max)
-        )
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=int(args.T_max))
 
-    # 开始训练
+    # 训练
     try:
-        losses_list, grad_last_layer_avg, grad_mid_layer_avg, train_loss, val_loss, train_acc, val_acc, best_acc = train(
+        (losses_list, grad_last_layer_avg, grad_mid_layer_avg,
+         train_loss, val_loss, train_acc, val_acc, best_acc,
+         grad_predictiveness_list, max_grad_diff_list) = train(
             model, optimizer, criterion, train_loader, val_loader, device,
-            exp_figures, exp_models, epochs_n=int(args.epochs), scheduler=scheduler
+            exp_figures, exp_models, epochs_n=int(args.epochs),
+            scheduler=scheduler, calc_grad_metrics=args.calc_gradient_metrics
         )
     except Exception as e:
-        raise RuntimeError(f"训练过程失败: {e}")
+        raise RuntimeError(f"训练失败: {e}")
 
-    # 加载最优模型评估测试集
+    # 测试
     print("\n" + "="*60)
     print("[Final Test] 加载最优模型...")
     best_model_path = os.path.join(exp_models, 'best_model.pth')
-    if not os.path.exists(best_model_path):
-        raise FileNotFoundError(f"最优模型文件不存在: {best_model_path}")
-    
     ckpt = torch.load(best_model_path, map_location=device, weights_only=False)
     model.load_state_dict(ckpt['model_state_dict'])
-    
     test_acc, test_error = evaluate_test(model, test_loader, device)
     print(f"✅ 最终测试准确率: {test_acc:.2f}%")
-    print(f"✅ 最终测试误差: {test_error:.2f}%")
     print("="*60)
 
-    # 保存所有指标
+    # 保存
     print("\n正在保存数据...")
     try:
-        # 展平损失列表
         flat_losses = [loss for epoch_loss in losses_list for loss in epoch_loss]
         np.savetxt(os.path.join(exp_metrics, 'losses.txt'), flat_losses, fmt='%.6f')
-        # 保存梯度数据
         np.save(os.path.join(exp_metrics, 'grad_last_layer_avg.npy'), grad_last_layer_avg)
         np.save(os.path.join(exp_metrics, 'grad_mid_layer_avg.npy'), grad_mid_layer_avg)
-        # 保存训练曲线
-        np.savez(
-            os.path.join(exp_metrics, 'training_curves.npz'),
-            train_loss=train_loss, 
-            val_loss=val_loss, 
-            train_acc=train_acc, 
-            val_acc=val_acc
-        )
 
-        # 保存配置文件
-        exp_root = os.path.dirname(exp_figures)
-        config_path = os.path.join(exp_root, "config.txt")
+        if args.calc_gradient_metrics and len(grad_predictiveness_list) > 0:
+            np.save(os.path.join(exp_metrics, 'grad_predictiveness.npy'), np.array(grad_predictiveness_list))
+            np.save(os.path.join(exp_metrics, 'max_grad_diff.npy'), np.array(max_grad_diff_list))
+            print("✅ 梯度指标已保存")
+
+        np.savez(os.path.join(exp_metrics, 'training_curves.npz'),
+                 train_loss=train_loss, val_loss=val_loss, train_acc=train_acc, val_acc=val_acc)
+
+        # 保存配置
+        config_path = os.path.join(os.path.dirname(exp_figures), "config.txt")
         with open(config_path, "w", encoding="utf-8") as f:
-            f.write("="*60 + "\n")
-            f.write(f"Experiment ID: {exp_id}\n")
-            f.write(f"Experiment Name: {args.name}\n")
-            f.write("="*60 + "\n")
-            f.write(f"Model: {args.model}\n")
-            f.write(f"Optimizer: {args.optimizer}\n")
-            f.write(f"Learning Rate: {args.lr}\n")
-            f.write(f"Epochs: {args.epochs}\n")
-            f.write(f"Batch Size: {args.batch_size}\n")
-            f.write(f"Weight Decay: {args.weight_decay}\n")
-            f.write(f"Label Smoothing: {args.label_smoothing}\n")
-            f.write(f"Scheduler: {args.scheduler if hasattr(args, 'scheduler') else 'None'}\n")
-            f.write(f"T_max: {args.T_max if hasattr(args, 'T_max') else 'None'}\n")
-            f.write(f"Seed: {args.seed}\n")
-            f.write(f"Num Workers: {args.num_workers}\n")
-            f.write(f"Loss Type: {args.loss_type}\n")
-            f.write(f"Note: {args.note if hasattr(args, 'note') else 'None'}\n")
-            f.write("-"*60 + "\n")
-            f.write(f"Best Validation Accuracy: {best_acc:.2f}%\n")
-            f.write(f"Final Test Accuracy: {test_acc:.2f}%\n")
-            f.write(f"Final Test Error: {test_error:.2f}%\n")
+            f.write(f"Experiment: {args.name}\n")
+            f.write(f"Model: {args.model}\nLR: {args.lr}\n")
+            f.write(f"Best Val Acc: {best_acc:.2f}%\n")
+            f.write(f"Test Acc: {test_acc:.2f}%\n")
         print("✅ 所有数据保存完成")
     except Exception as e:
-        raise RuntimeError(f"保存数据失败: {e}")
+        raise RuntimeError(f"保存失败: {e}")
 
-    # 最终结果输出
     print("\n🎉 训练完成！")
     print(f"最佳验证准确率: {best_acc:.2f}%")
     print(f"最终测试准确率: {test_acc:.2f}%")
-    print(f"最终测试误差: {test_error:.2f}%")
     print("="*60)
