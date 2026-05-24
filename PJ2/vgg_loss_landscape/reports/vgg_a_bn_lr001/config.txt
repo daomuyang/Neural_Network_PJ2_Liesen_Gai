@@ -17,5 +17,5 @@ Loss Type: cross_entropy
 Note: VGG-A 有BN，学习率1e-3
 ------------------------------------------------------------
 Best Validation Accuracy: 87.82%
-Final Test Accuracy: 87.17%
-Final Test Error: 12.83%
+Final Test Accuracy: 87.25%
+Final Test Error: 12.75%
