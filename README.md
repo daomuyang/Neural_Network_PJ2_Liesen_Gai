@@ -164,15 +164,10 @@ python3 scripts/train.py --exp 9   # VGG-A-BN 最优配置（lr=1e-3 + CosineAnn
 
 #### 2. 结果可视化（所有脚本无需指定实验序号）
 ```bash
-# 生成完整实验结果汇总表，输出至reports/experiment_results.txt
-python3 scripts/summarize_results.py
-
-# 生成损失景观对比图，输出至reports/figures/
-python3 scripts/plot_combined_loss_landscape.py
-
-# 自动读取lr=0.001实验的梯度数据
-# 生成分层梯度对比图（输出至reports/figures/）和梯度结果汇总（输出至reports/gradient_result.txt）
-python3 scripts/plot_both_gradients.py
+python3 scripts/summarize_results.py             # 生成完整实验结果汇总表，输出至reports/experiment_results.txt
+python3 scripts/plot_combined_loss_landscape.py  # 生成损失景观对比图，输出至reports/figures/
+python3 scripts/plot_both_gradients.py           # 自动读取lr=0.001实验的梯度数据，生成分层梯度对比图（输出至reports/figures/）和梯度结果汇总（输出至reports/gradient_result.txt）
+python3 scripts/plot_gradient_metrics.py           # 自动读取lr=0.001实验的梯度数据，生成梯度预测图和最大梯度差异图（输出至reports/figures/）
 ```
 
 ## 实验结果总结
@@ -186,7 +181,7 @@ python3 scripts/plot_both_gradients.py
 - 固定学习率下，BN平均提升验证准确率：4.43%
 - 加入学习率调度器后，最优测试准确率达88.28%（较同条件无BN模型提升3.54%）
 - 30轮内平均达到最优轮数速度提升：2.2轮，最优实验过拟合程度降低0.61%
-- 核心机制：将中间卷积层稳态梯度范数降低76.7%、最后分类层最大梯度范数提升19.4%，通过平滑损失景观、调控分层梯度、增强学习率鲁棒性优化训练过程
+- BN将中间卷积层稳态梯度范数降低76.7%、最后分类层最大梯度范数提升19.4%，梯度L2差异平均降低3.9%、有效β平滑度平均降低29.57%，通过平滑损失景观与优化空间、调控分层梯度、增强学习率鲁棒性优化训练过程
 
 ## 重要说明
 ### 数据集
