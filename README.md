@@ -59,6 +59,7 @@ PJ2/
 │   │   ├── train.py # 训练主脚本
 │   │   ├── summarize_results.py # 结果汇总
 │   │   ├── plot_both_gradients.py # 梯度范数绘图
+│   │   ├── plot_gradient_metrics.py # 梯度预测与最大差异绘图
 │   │   └── plot_combined_loss_landscape.py # 损失景观绘图
 │   ├── data/ # 数据集目录
 │   │   ├── __init__.py
